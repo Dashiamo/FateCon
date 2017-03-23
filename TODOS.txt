@@ -1,5 +1,5 @@
 Initial playable state:
-    - Show if card is hidden to other players on local view.
+    - Refactor so that div has the "card" class and all events go through that? (Make img/overlay ignore mouse events)
     - Server side card position/flip state.
     - Hand system.
     - Counters.
