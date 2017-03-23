@@ -1,54 +1,51 @@
-var socket;
+// Globals
+var socket   = null;
 var dragging = false;
 
-var defaultCardWidth = 100;
-var defaultCardHeight = 140;
-var zoomedCardWidth = 375;
-var zoomedCardHeight = 523;
-var zoomedCardOffsetX = defaultCardWidth / 2 - zoomedCardWidth / 2;
-var zoomedCardOffsetY = defaultCardHeight / 2 - zoomedCardHeight / 2;
-var gridWidth = 101;
-var gridHeight = 141;
+// Constants
+const gridWidth         = 101;
+const gridHeight        = 141;
+const defaultCardWidth  = 100;
+const defaultCardHeight = 140;
+const zoomedCardWidth   = 375;
+const zoomedCardHeight  = 523;
+const zoomedCardOffsetX = defaultCardWidth / 2 - zoomedCardWidth / 2;
+const zoomedCardOffsetY = defaultCardHeight / 2 - zoomedCardHeight / 2;
 
-function CreateGrid(cellWidth, cellHeight, width, height) 
-{
+function DropCard(event, ui) {
+    var target = $(event.target);
+
+    var index = ui.draggable.index(".card");
+    var top = target.offset().top;
+    var left = target.offset().left;
+
+    ui.draggable.offset({top: top, left: left});
+    socket.emit("card moved", [index, top, left]);
+}
+
+function CreateGrid(cellWidth, cellHeight, width, height) {
     var parent = $('<div />', {
         class: 'grid',
         width: width  * cellWidth,
         height: height  * cellHeight
-    }).appendTo('body');
+    });
+
+    parent.appendTo('body');
 
     for (var i = 0; i < height; i++) {
-        for (var p = 0; p < width; p++) {
+        for (var j = 0; j < width; j++) {
             var cell = $('<div />', {
                 width: cellWidth - 1,
-                height: cellHeight - 1,
-                id: p + "x" + i
+                height: cellHeight - 1
             });
 
             cell.droppable({
-                classes:{
-                    "ui-droppable-hover": "hoveredCell"
-                },
-                drop: function(event, ui) {
-                    var target = $(event.target);
-
-                    var index = ui.draggable.index(".card");
-                    var top = target.offset().top;
-                    var left = target.offset().left;
-
-                    ui.draggable.css({
-                        top: top,
-                        left: left
-                    });
-
-                    socket.emit("card moved", [index, top, left]);
-                }
+                classes: { "ui-droppable-hover": "hovered-cell" },
+                drop: DropCard
             });
 
-            if (i == 2)
-            {
-                cell.addClass("battleRow");
+            if (i == 2) {
+                cell.addClass("battle-row");
             }
 
             cell.appendTo(parent);
@@ -56,8 +53,7 @@ function CreateGrid(cellWidth, cellHeight, width, height)
     }
 }
 
-function CreateZoomCard(target)
-{
+function CreateZoomCard(target) {
     var top = Math.max(0, target.offset().top + zoomedCardOffsetY);
     top = Math.min($(window).height() - zoomedCardHeight, top);
 
@@ -70,13 +66,11 @@ function CreateZoomCard(target)
                 .appendTo("body");
 }
 
-function RemoveZoomCard()
-{
+function RemoveZoomCard() {
     $("#zoomCard").remove();
 }
 
-function FlipCard(target)
-{
+function FlipCard(target) {
     target.toggleClass("flipped");
 
     var otherSide = target.attr("otherSide");
@@ -88,15 +82,14 @@ $(function() {
     CreateGrid(gridWidth, gridHeight, 7, 5);
 
     socket = io();
-    socket.on("card moved", function(data){
+    socket.on("card moved", function(data) {
         var target = $(".card").eq(data[0]);
-        if (target)
-        {
+        if (target) {
             target.animate({top: data[1], left: data[2]}, 100, "linear");
         }
     });
 
-    socket.on("card flipped", function(data){
+    socket.on("card flipped", function(data) {
         FlipCard($(".card").eq(data));
     });
 
@@ -109,36 +102,30 @@ $(function() {
         containment: "parent",
         scroll: false,
         stack: ".card",
-        start: function(event)
-        {
+        start: function(event) {
             dragging = true;
             RemoveZoomCard();
         },
-        stop: function(event)
-        {
+        stop: function(event) {
             dragging = false;
         }
     })
 
     $(".card").hover(
-        function(event)
-        {
+        function(event) {
             var target = $(event.target)
-            if (!dragging && !target.hasClass("flipped"))
-            {
+            if (!dragging && !target.hasClass("flipped")) {
                 CreateZoomCard(target);
             }
         },
-        function(event)
-        {
+        function(event) {
             RemoveZoomCard();
         }
     );
 
-    $(".card").click(function(event){
+    $(".card").click(function(event) {
         var target = $(event.target);
-        if (!target.hasClass("flipped"))
-        {
+        if (!target.hasClass("flipped")) {
             RemoveZoomCard();
             target.toggleClass("flipped-local");
             socket.emit("card flipped", target.index(".card"));

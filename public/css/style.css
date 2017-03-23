@@ -3,26 +3,26 @@ html, body {
 }
 
 body {
-    background-image: url("background.png");
-    background-repeat: repeat;    
     overflow: hidden;
+    background-repeat: repeat;
+    background-image: url("background.png");
 }
 
 .grid {
-    position: absolute;
     top: 50%;
     left: 50%;
-    transform: translate(-50%,-50%);
+    z-index: -1;
+    position: absolute;
+    pointer-events: none;
     border: 1px solid #EEE;
     border-width: 1px 0 0 1px;
-    z-index: -1;
-    pointer-events:none;
+    transform: translate(-50%,-50%);
 }
 
 .grid div {
+    float: left;
     border: 1px solid #EEE;
     border-width: 0 1px 1px 0;
-    float: left;
     background-color: rgba(255, 0, 0, 0.1);
 }
 
@@ -39,12 +39,12 @@ img {
 }
 
 .card {
-    height: 140px;
     top: 0px;
     left: 0px;
+    height: 140px;
 }
 
 #zoomCard  {    
-    pointer-events:none;
     z-index: 10000;
+    pointer-events: none;
 }
