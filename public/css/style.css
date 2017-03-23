@@ -44,4 +44,5 @@ img {
 
 #zoomCard  {    
     pointer-events:none;
+    z-index: 10000;
 }

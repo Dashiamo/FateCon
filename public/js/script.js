@@ -109,6 +109,7 @@ $(function() {
         },
         containment: "parent",
         scroll: false,
+        stack: ".card",
         start: function(event)
         {
             dragging = true;

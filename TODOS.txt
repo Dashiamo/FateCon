@@ -1,6 +1,6 @@
 Initial playable state:
-    - Server side card position/flip state.
     - Show if card is hidden to other players on local view.
+    - Server side card position/flip state.
     - Hand system.
     - Counters.
     - Simple way to pick deck you want to play and load all those cards.
