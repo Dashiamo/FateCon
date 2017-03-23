@@ -31,7 +31,6 @@ function CreateGrid(cellWidth, cellHeight, width, height)
                     "ui-droppable-hover": "hoveredCell"
                 },
                 drop: function(event, ui) {
-                    dragging = false;
                     var target = $(event.target);
 
                     var index = ui.draggable.index(".card");
@@ -114,7 +113,11 @@ $(function() {
         {
             dragging = true;
             RemoveZoomCard();
-        }        
+        },
+        stop: function(event)
+        {
+            dragging = false;
+        }
     })
 
     $(".card").hover(

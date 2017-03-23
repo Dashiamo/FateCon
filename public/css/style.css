@@ -1,3 +1,7 @@
+html, body {
+    height: 100%;
+}
+
 body {
     background-image: url("background.png");
     background-repeat: repeat;    
@@ -5,14 +9,12 @@ body {
 }
 
 .grid {
-    margin: auto;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%,-50%);
     border: 1px solid #EEE;
     border-width: 1px 0 0 1px;
-    position: relative;
-    top: 50%;
-    -webkit-transform: translateY(-50%);
-    -ms-transform: translateY(-50%);
-    transform: translateY(-50%);
     z-index: -1;
     pointer-events:none;
 }
