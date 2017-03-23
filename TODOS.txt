@@ -1,0 +1,14 @@
+Initial playable state:
+    - Server side card position/flip state.
+    - Show if card is hidden to other players on local view.
+    - Hand system.
+    - Counters.
+    - Simple way to pick deck you want to play and load all those cards.
+
+    - Probably more stuff goes here. 
+
+Improvements:
+    - Make sure cards keep on the grid on window resize.
+    - Make first two people to join players and everyone else spectators.
+    - Fix transparent corners on cards.
+    - Basic game logic?
