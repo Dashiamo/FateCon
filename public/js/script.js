@@ -18,7 +18,7 @@ const medusaDeck  = ["Alluring", "Arresting", "Irresistible", "Sundering", "Temp
 function DropCard(event, ui) {
     var target = $(event.target);
 
-    var index = ui.draggable.index(".card-wrapper");
+    var index = ui.draggable.index(".card");
     var top = target.offset().top;
     var left = target.offset().left;
 
@@ -57,11 +57,10 @@ function CreateGrid(cellWidth, cellHeight, width, height) {
 }
 
 function CreateCard(name) {
-    var parent = $('<div />').addClass('card-wrapper')
+    var parent = $('<div />').addClass('card')
                              .appendTo("body");
 
     $("<img />").css("height", defaultCardHeight)
-                .addClass("card")
                 .attr("src", "/images/" + name + ".jpg")
                 .attr("otherSide", "/images/Card Back.jpg")
                 .appendTo(parent);
@@ -78,7 +77,7 @@ function CreateZoomCard(target) {
     left = Math.min($(window).width() - zoomedCardWidth, left);
 
     $("<img />").attr("id", "zoom-card")
-                .attr("src", target.attr("src"))
+                .attr("src", target.children("img").attr("src"))
                 .offset({top: top, left: left})
                 .appendTo("body");
 }
@@ -90,9 +89,10 @@ function RemoveZoomCard() {
 function FlipCard(target) {
     target.toggleClass("flipped");
 
-    var otherSide = target.attr("otherSide");
-    target.attr("otherSide", target.attr("src"));
-    target.attr("src", otherSide);
+    var targetImage = target.children("img");
+    var otherSide = targetImage.attr("otherSide");
+    targetImage.attr("otherSide", targetImage.attr("src"));
+    targetImage.attr("src", otherSide);
 }
 
 $(function() {
@@ -108,7 +108,7 @@ $(function() {
 
     socket = io();
     socket.on("card moved", function(data) {
-        var target = $(".card-wrapper").eq(data[0]);
+        var target = $(".card").eq(data[0]);
         if (target) {
             target.animate({top: data[1], left: data[2]}, 100, "linear");
         }
@@ -118,15 +118,16 @@ $(function() {
         FlipCard($(".card").eq(data));
     });
 
-    $(".card-wrapper").draggable({
+    $(".card").draggable({
+        containment: "parent",
         cursor: "move",
         cursorAt: {
             top: defaultCardHeight / 2,
             left: defaultCardWidth / 2
         },
-        containment: "parent",
+        delay: 100,
         scroll: false,
-        stack: ".card-wrapper",
+        stack: ".card",
         start: function(event) {
             dragging = true;
             RemoveZoomCard();
@@ -148,11 +149,11 @@ $(function() {
         }
     );
 
-    $(".card-wrapper").click(function(event) {
+    $(".card").click(function(event) {
         var target = $(event.target);
         if (!target.hasClass("flipped")) {
             RemoveZoomCard();
-            target.siblings(".overlay").toggleClass("overlay-shown");
+            target.children(".overlay").toggleClass("overlay-shown");
             socket.emit("card flipped", target.index(".card"));
         }
     });

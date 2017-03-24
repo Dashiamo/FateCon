@@ -1,5 +1,4 @@
 Initial playable state:
-    - Refactor so that div has the "card" class and all events go through that? (Make img/overlay ignore mouse events)
     - Server side card position/flip state.
     - Hand system.
     - Counters.
