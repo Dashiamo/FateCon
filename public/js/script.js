@@ -14,6 +14,16 @@ const ZoomedCardHeight  = 523;
 const ZoomedCardOffsetX = DefaultCardWidth / 2 - ZoomedCardWidth / 2;
 const ZoomedCardOffsetY = DefaultCardHeight / 2 - ZoomedCardHeight / 2;
 
+function UpdateGridState(data) {
+    if (data.from.x >= 0 && data.from.y >= 0) {
+        grid[data.from.y][data.from.x] = -1;
+    }
+
+    grid[data.to.y][data.to.x] = data.index;
+    deck[data.index].x = data.to.x;
+    deck[data.index].y = data.to.y;
+}
+
 function MoveCard(target, x, y) {
     var cell = $($(".cell").get(x + y * grid[0].length));
     target.animate({top: cell.offset().top, left: cell.offset().left}, 100, "linear");
@@ -28,16 +38,20 @@ function DropCard(event, ui) {
     });
 
     var index = ui.draggable.data("index");
-    var x = target.data("x");
-    var y = target.data("y");
+    var data = {
+        from: {
+            x: deck[index].x,
+            y: deck[index].y
+        },
+        to: {
+            x: target.data("x"),
+            y: target.data("y")
+        },
+        index: index
+    };
 
-    grid[y][x] = index;
-
-    socket.emit("card moved", {
-        index: index,
-        x: x,
-        y: y
-    });
+    UpdateGridState(data);
+    socket.emit("card moved", data);
 }
 
 function CreateGrid(cellWidth, cellHeight, gridData) {
@@ -152,6 +166,10 @@ function PositionCards() {
                 top: $(this).offset().top,
                 left: $(this).offset().left
             });
+
+            // TODO: Not needed when card state is stored properly on server.
+            deck[index].x = x;
+            deck[index].y = y;
         }
     });
 }
@@ -194,8 +212,8 @@ $(function() {
     socket.on("card moved", function(data) {
         var target = deck[data.index].element;
         if (target) {
-            MoveCard(target, data.x, data.y);
-            grid[data.y][data.x] = data.index;
+            MoveCard(target, data.to.x, data.to.y);
+            UpdateGridState(data);
         }
     });
 

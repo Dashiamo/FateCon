@@ -26,7 +26,7 @@ io.on("connection", function(socket) {
     });
 
     socket.on("card moved", function(data) {
-        gamedata.setGridValue(data.x, data.y, data.index)
+        gamedata.moveCard(data.from, data.to, data.index)
         socket.broadcast.emit("card moved", data);
     });
 

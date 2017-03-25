@@ -23,8 +23,12 @@ var getGrid = function() {
     return grid;
 }
 
-var setGridValue = function(x, y, value) {
-    grid[y][x] = value;
+var moveCard = function(from, to, index) {
+    if (from.x >= 0 && from.y >= 0) {
+        grid[from.y][from.x] = -1;
+    }
+
+    grid[to.y][to.x] = index;
 }
 
 var generateDeck = function(name) {
@@ -32,13 +36,17 @@ var generateDeck = function(name) {
     
     for(var i = 0; i < CommonCards.length; i++) {
         deck.push({
-            name: CommonCards[i]
+            name: CommonCards[i],
+            x: -1,
+            y: -1
         });
     }
 
     for(var i = 0; i < MedusaCards.length; i++) {
         deck.push({
-            name: MedusaCards[i]
+            name: MedusaCards[i],
+            x: -1,
+            y: -1
         });
     }
 
@@ -48,6 +56,6 @@ var generateDeck = function(name) {
 module.exports = {
     initializeGrid: initializeGrid,
     getGrid: getGrid,
-    setGridValue: setGridValue,
+    moveCard: moveCard,
     generateDeck: generateDeck
 }
