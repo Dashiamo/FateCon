@@ -80,15 +80,17 @@ function CreateGrid() {
 function CreateCards() {
     for (var i = 0; i < game.state.cards.length; i++) {
         var card = game.state.cards[i];
-        game.state.cards[i].element = CreateCard(card.name, i);
+        game.state.cards[i].element = CreateCard(card.name, i, card.owner);
         if (card.flipped) {
             FlipCard(i);
         }
     }
 }
 
-function CreateCard(name, index) {
+function CreateCard(name, index, owner) {
     var card = $("<div />").addClass("card")
+        .offset({ left: 10, top: 10 + owner * (10 + DefaultCardHeight) })
+        .css("z-index", index)
         .data("index", index)
         .appendTo("body");
 
@@ -140,7 +142,7 @@ function CreateCard(name, index) {
         var index = target.data("index");
         RemoveZoomCard();
 
-        if (game.state.players[player].HasCard(index)) {
+        if (game.state.cards[index].owner === player) {
             game.FlipCard(index);
             FlipCard(index);
             socket.emit("card flipped", index);
@@ -191,7 +193,7 @@ function FlipCard(index) {
         return;
     }
 
-    if (player === -1 || game.state.players[player].HasCard(index)) {
+    if (player === -1 || game.state.cards[index].owner === player) {
         var targetOverlay = target.children(".overlay");
         targetOverlay.toggleClass("overlay-shown");
     } else {

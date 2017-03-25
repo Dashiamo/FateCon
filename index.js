@@ -53,7 +53,7 @@ io.on("connection", function (socket) {
     });
 
     socket.on("card flipped", function (index) {
-        if (socket.player > -1 && game.state.players[socket.player].HasCard(index)) {
+        if (game.state.cards[index].owner === socket.player) {
             game.FlipCard(index);
             socket.broadcast.emit("card flipped", index);
         }

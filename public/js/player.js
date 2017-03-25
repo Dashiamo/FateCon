@@ -1,12 +1,12 @@
-var Player = function (hp, deck = []) {
+var Player = function (hp, hand = []) {
     this.hp = hp;
-    this.deck = deck;
+    this.hand = hand;
 
     return this;
 }
 
 Player.prototype.HasCard = function (index) {
-    return this.deck.indexOf(index) > -1;
+    return this.hand.indexOf(index) > -1;
 }
 
 if (typeof module !== "undefined" && module.exports) {

@@ -5,7 +5,7 @@ if (typeof require !== "undefined") {
 var Game = function (state) {
     this.state = state;
     for (var i = 0; i < state.players.length; i++) {
-        this.state.players[i] = new Player(state.players[i].hp, state.players[i].deck);
+        this.state.players[i] = new Player(state.players[i].hp, state.players[i].hand);
     }
 
     return this;
@@ -13,8 +13,8 @@ var Game = function (state) {
 
 Game.prototype.AddDeck = function (player, deck) {
     for (var i = 0; i < deck.length; i++) {
-        var index = this.state.cards.push(deck[i]) - 1;
-        this.state.players[player].deck.push(index);
+        deck[i].owner = player;
+        this.state.cards.push(deck[i]);
     }
 }
 
