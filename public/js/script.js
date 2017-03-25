@@ -4,15 +4,25 @@ var dragging = false;
 var game = null;
 var player = -1;
 
+var DefaultCardWidth = 71;
+var DefaultCardHeight = 99;
+var CellWidth = DefaultCardWidth + 1;
+var CellHeight = DefaultCardHeight + 1;
+
 // Constants
-const CellWidth = 101;
-const CellHeight = 141;
-const DefaultCardWidth = 100;
-const DefaultCardHeight = 140;
 const ZoomedCardWidth = 375;
 const ZoomedCardHeight = 523;
 const ZoomedCardOffsetX = DefaultCardWidth / 2 - ZoomedCardWidth / 2;
 const ZoomedCardOffsetY = DefaultCardHeight / 2 - ZoomedCardHeight / 2;
+
+function SetupDimensions() {
+    var windowHeight = $(window).height();
+    var ratio = ZoomedCardWidth / ZoomedCardHeight;
+    DefaultCardHeight = (windowHeight - 40) / (2 + game.state.gridHeight);
+    DefaultCardWidth = DefaultCardHeight * ratio;
+    CellHeight = Math.ceil(DefaultCardHeight) + 1;
+    CellWidth = Math.ceil(DefaultCardWidth) + 1;
+}
 
 function MoveCard(target, to) {
     var cell = $($(".cell").get(to.x + to.y * game.state.gridWidth));
@@ -152,6 +162,11 @@ function CreateCard(name, index, owner) {
     return card;
 }
 
+function ResizeCards() {
+    $(".card").draggable({ cursorAt: { top: DefaultCardHeight / 2, left: DefaultCardWidth / 2 } });
+    $(".card img").css("height", DefaultCardHeight);
+}
+
 function PositionCards() {
     RemoveZoomCard();
 
@@ -210,6 +225,7 @@ $(function () {
     socket.on("setup", function (data) {
         player = data[0];
         game = new Game(data[1]);
+        SetupDimensions();
         CreateGrid();
         CreateCards();
         PositionCards();
@@ -228,5 +244,11 @@ $(function () {
         FlipCard(index);
     });
 
-    $(window).resize(PositionCards);
+    $(window).resize(function () {
+        SetupDimensions();
+        $(".grid").remove();
+        CreateGrid();
+        ResizeCards();
+        PositionCards();
+    });
 });
