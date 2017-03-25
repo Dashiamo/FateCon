@@ -8,7 +8,6 @@ Initial playable state:
     - Probably more stuff goes here. 
 
 Improvements:
-    - Make sure cards keep on the grid on window resize.
     - Make first two people to join players and everyone else spectators.
     - Fix transparent corners on cards.
     - Basic game logic?

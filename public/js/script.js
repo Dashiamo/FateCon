@@ -155,6 +155,7 @@ function CreateCard(name, index) {
 }
 
 function PositionCards() {
+    RemoveZoomCard();
     $(".cell").each(function() {
         var x = $(this).data("x");
         var y = $(this).data("y");
