@@ -220,4 +220,6 @@ $(function() {
     socket.on("card flipped", function(data) {
         FlipCard($(".card").eq(data));
     });
+
+    $(window).resize(PositionCards);
 });
