@@ -18,12 +18,12 @@ Game.prototype.AddDeck = function (player, deck) {
     }
 }
 
-Game.prototype.MoveCard = function (player, index, to) {
+Game.prototype.MoveCard = function (index, to) {
     this.state.cards[index].x = to.x;
     this.state.cards[index].y = to.y;
 }
 
-Game.prototype.FlipCard = function (player, index) {
+Game.prototype.FlipCard = function (index) {
     this.state.cards[index].flipped = !this.state.cards[index].flipped;
 }
 

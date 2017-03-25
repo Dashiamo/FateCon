@@ -1,5 +1,4 @@
 Initial playable state:
-    - Make first two people to join players and everyone else spectators.
     - Hand system.
     - Counters.
     - Simple way to pick deck you want to play and load all those cards.

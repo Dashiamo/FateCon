@@ -2,7 +2,7 @@
 var socket = null;
 var dragging = false;
 var game = null;
-var player = 0;
+var player = -1;
 
 // Constants
 const CellWidth = 101;
@@ -36,7 +36,7 @@ function DropCard(event, ui) {
         index: index
     };
 
-    game.MoveCard(player, data.index, data.to);
+    game.MoveCard(data.index, data.to);
     socket.emit("card moved", data);
 }
 
@@ -100,6 +100,25 @@ function CreateCard(name, index) {
     $("<div />").addClass("overlay")
         .appendTo(card);
 
+    card.hover(
+        function (event) {
+            var target = $(event.target);
+            var index = target.data("index");
+
+            if (!dragging && !game.state.cards[index].flipped) {
+                CreateZoomCard(target);
+            }
+        },
+        function (event) {
+            RemoveZoomCard();
+        }
+    );
+
+    // Don't bind the listeners used to manipulate cards if you are a spectator.
+    if (player === -1) {
+        return card;
+    }
+
     card.draggable({
         containment: "parent",
         cursor: "move",
@@ -116,27 +135,13 @@ function CreateCard(name, index) {
         }
     })
 
-    card.hover(
-        function (event) {
-            var target = $(event.target);
-            var index = target.data("index");
-
-            if (!dragging && !game.state.cards[index].flipped) {
-                CreateZoomCard(target);
-            }
-        },
-        function (event) {
-            RemoveZoomCard();
-        }
-    );
-
     card.click(function (event) {
         var target = $(event.target);
         var index = target.data("index");
         RemoveZoomCard();
 
         if (game.state.players[player].HasCard(index)) {
-            game.FlipCard(player, index);
+            game.FlipCard(index);
             FlipCard(index);
             socket.emit("card flipped", index);
         }
@@ -186,7 +191,7 @@ function FlipCard(index) {
         return;
     }
 
-    if (game.state.players[player].HasCard(index)) {
+    if (player === -1 || game.state.players[player].HasCard(index)) {
         var targetOverlay = target.children(".overlay");
         targetOverlay.toggleClass("overlay-shown");
     } else {
@@ -200,8 +205,9 @@ function FlipCard(index) {
 $(function () {
     socket = io();
 
-    socket.on("setup", function (state) {
-        game = new Game(state);
+    socket.on("setup", function (data) {
+        player = data[0];
+        game = new Game(data[1]);
         CreateGrid();
         CreateCards();
         PositionCards();
@@ -210,13 +216,13 @@ $(function () {
     socket.on("card moved", function (data) {
         var target = game.state.cards[data.index].element;
         if (target) {
-            game.MoveCard(1 - player, data.index, data.to);
+            game.MoveCard(data.index, data.to);
             MoveCard(target, data.to);
         }
     });
 
     socket.on("card flipped", function (index) {
-        game.FlipCard(1 - player, index);
+        game.FlipCard(index);
         FlipCard(index);
     });
 

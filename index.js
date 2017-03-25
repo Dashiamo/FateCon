@@ -9,33 +9,52 @@ var io = require("socket.io")(http);
 var data = require("./data");
 var game = new Game(data.GenerateInitialState());
 game.AddDeck(0, data.GenerateDeck("medusa"));
-// game.AddDeck(1, data.GenerateDeck("medusa"));
+game.AddDeck(1, data.GenerateDeck("medusa"));
 
 app.use(express.static("public"));
 app.get("/", function (req, res) {
     res.sendFile(__dirname + "/index.html");
 });
 
+var playerSpotsTaken = [false, false];
+
 io.on("connection", function (socket) {
-    socket.player = 0;
     console.log("a user connected");
 
-    socket.emit("setup", game.state);
+    socket.player = -1;
+    for (var i = 0; i < playerSpotsTaken.length; i++) {
+        if (!playerSpotsTaken[i]) {
+            playerSpotsTaken[i] = true;
+            socket.player = i;
+            console.log("assigned to player " + i)
+            break;
+        }
+    }
+
+    if (socket.player === -1) {
+        console.log("defaulted to spectator");
+    }
+
+    socket.emit("setup", [socket.player, game.state]);
 
     socket.on("disconnect", function () {
         console.log("a user disconnected");
+        if (socket.player > -1) {
+            playerSpotsTaken[socket.player] = false;
+            console.log("remove from player " + socket.player);
+        }
     });
 
     socket.on("card moved", function (data) {
-        if (typeof socket.player !== "undefined" && game.state.players[socket.player].HasCard(data.index)) {
-            game.MoveCard(socket.player, data.index, data.to);
+        if (socket.player > -1) {
+            game.MoveCard(data.index, data.to);
             socket.broadcast.emit("card moved", data);
         }
     });
 
     socket.on("card flipped", function (index) {
-        if (typeof socket.player !== "undefined" && game.state.players[socket.player].HasCard(index)) {
-            game.FlipCard(socket.player, index);
+        if (socket.player > -1 && game.state.players[socket.player].HasCard(index)) {
+            game.FlipCard(index);
             socket.broadcast.emit("card flipped", index);
         }
     });
