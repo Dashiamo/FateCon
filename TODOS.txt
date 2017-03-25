@@ -1,6 +1,5 @@
 Initial playable state:
-    - Server side card state (so that we can maintain flip state on refresh).
-      - This probably requires someway to connect as player 1 or 2 so that someone owns the flipped cards across refreshes.
+    - Make first two people to join players and everyone else spectators.
     - Hand system.
     - Counters.
     - Simple way to pick deck you want to play and load all those cards.
@@ -8,6 +7,5 @@ Initial playable state:
     - Probably more stuff goes here. 
 
 Improvements:
-    - Make first two people to join players and everyone else spectators.
     - Fix transparent corners on cards.
     - Basic game logic?

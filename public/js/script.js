@@ -1,32 +1,22 @@
 // Globals
-var socket   = null;
+var socket = null;
 var dragging = false;
-var grid     = [];
-var deck     = [];
+var game = null;
+var player = 0;
 
 // Constants
-const CellWidth         = 101;
-const CellHeight        = 141;
-const DefaultCardWidth  = 100;
+const CellWidth = 101;
+const CellHeight = 141;
+const DefaultCardWidth = 100;
 const DefaultCardHeight = 140;
-const ZoomedCardWidth   = 375;
-const ZoomedCardHeight  = 523;
+const ZoomedCardWidth = 375;
+const ZoomedCardHeight = 523;
 const ZoomedCardOffsetX = DefaultCardWidth / 2 - ZoomedCardWidth / 2;
 const ZoomedCardOffsetY = DefaultCardHeight / 2 - ZoomedCardHeight / 2;
 
-function UpdateGridState(data) {
-    if (data.from.x >= 0 && data.from.y >= 0) {
-        grid[data.from.y][data.from.x] = -1;
-    }
-
-    grid[data.to.y][data.to.x] = data.index;
-    deck[data.index].x = data.to.x;
-    deck[data.index].y = data.to.y;
-}
-
-function MoveCard(target, x, y) {
-    var cell = $($(".cell").get(x + y * grid[0].length));
-    target.animate({top: cell.offset().top, left: cell.offset().left}, 100, "linear");
+function MoveCard(target, to) {
+    var cell = $($(".cell").get(to.x + to.y * game.state.gridWidth));
+    target.animate({ top: cell.offset().top, left: cell.offset().left }, 100, "linear");
 }
 
 function DropCard(event, ui) {
@@ -39,10 +29,6 @@ function DropCard(event, ui) {
 
     var index = ui.draggable.data("index");
     var data = {
-        from: {
-            x: deck[index].x,
-            y: deck[index].y
-        },
         to: {
             x: target.data("x"),
             y: target.data("y")
@@ -50,29 +36,29 @@ function DropCard(event, ui) {
         index: index
     };
 
-    UpdateGridState(data);
+    game.MoveCard(player, data.index, data.to);
     socket.emit("card moved", data);
 }
 
-function CreateGrid(cellWidth, cellHeight, gridData) {
-    grid = gridData;
+function CreateGrid() {
+    var height = game.state.gridHeight;
+    var width = game.state.gridWidth;
 
-    var height = grid.length;
-    var width = grid[0].length;
-    var parent = $('<div />', {
-        class: 'grid',
-        width: width  * cellWidth,
-        height: height  * cellHeight
+    var parent = $("<div />", {
+        class: "grid",
+        width: width * CellWidth,
+        height: height * CellHeight
     });
 
-    parent.appendTo('body');
+    parent.appendTo("body");
 
     for (var i = 0; i < height; i++) {
         for (var j = 0; j < width; j++) {
-            var cell = $('<div />', {
-                class: 'cell',
-                width: cellWidth - 1,
-                height: cellHeight - 1
+            var cell = $("<div />", {
+                id: j + "-" + i,
+                class: "cell",
+                width: CellWidth - 1,
+                height: CellHeight - 1
             });
 
             cell.droppable({
@@ -91,26 +77,28 @@ function CreateGrid(cellWidth, cellHeight, gridData) {
     }
 }
 
-function CreateCards(cardData) {
-    deck = cardData;
-    for(var i = 0; i < deck.length; i++)
-    {
-        deck[i].element = CreateCard(deck[i].name, i);
+function CreateCards() {
+    for (var i = 0; i < game.state.cards.length; i++) {
+        var card = game.state.cards[i];
+        game.state.cards[i].element = CreateCard(card.name, i);
+        if (card.flipped) {
+            FlipCard(i);
+        }
     }
 }
 
 function CreateCard(name, index) {
-    var card = $('<div />').addClass('card')
-                           .data("index", index)
-                           .appendTo("body");
+    var card = $("<div />").addClass("card")
+        .data("index", index)
+        .appendTo("body");
 
     $("<img />").css("height", DefaultCardHeight)
-                .attr("src", "/images/" + name + ".jpg")
-                .attr("otherSide", "/images/Card Back.jpg")
-                .appendTo(card);
+        .attr("src", "/images/" + name + ".jpg")
+        .attr("otherSide", "/images/Card Back.jpg")
+        .appendTo(card);
 
     $("<div />").addClass("overlay")
-                .appendTo(card);
+        .appendTo(card);
 
     card.draggable({
         containment: "parent",
@@ -119,35 +107,38 @@ function CreateCard(name, index) {
         delay: 100,
         scroll: false,
         stack: ".card",
-        start: function(event) {
+        start: function (event) {
             dragging = true;
             RemoveZoomCard();
         },
-        stop: function(event) {
+        stop: function (event) {
             dragging = false;
         }
     })
 
     card.hover(
-        function(event) {
+        function (event) {
             var target = $(event.target);
+            var index = target.data("index");
 
-            if (!dragging && !target.hasClass("flipped")) {
+            if (!dragging && !game.state.cards[index].flipped) {
                 CreateZoomCard(target);
             }
         },
-        function(event) {
+        function (event) {
             RemoveZoomCard();
         }
     );
 
-    card.click(function(event) {
+    card.click(function (event) {
         var target = $(event.target);
+        var index = target.data("index");
+        RemoveZoomCard();
 
-        if (!target.hasClass("flipped")) {
-            RemoveZoomCard();
-            target.children(".overlay").toggleClass("overlay-shown");
-            socket.emit("card flipped", target.data("index"));
+        if (game.state.players[player].HasCard(index)) {
+            game.FlipCard(player, index);
+            FlipCard(index);
+            socket.emit("card flipped", index);
         }
     });
 
@@ -156,23 +147,20 @@ function CreateCard(name, index) {
 
 function PositionCards() {
     RemoveZoomCard();
-    $(".cell").each(function() {
-        var x = $(this).data("x");
-        var y = $(this).data("y");
 
-        var index = grid[y][x];
-        if (index >= 0) {
-            var target = deck[index].element;
-            target.offset({
-                top: $(this).offset().top,
-                left: $(this).offset().left
-            });
-
-            // TODO: Not needed when card state is stored properly on server.
-            deck[index].x = x;
-            deck[index].y = y;
+    var cards = game.state.cards;
+    for (var i = 0; i < cards.length; i++) {
+        var card = cards[i];
+        if (card.x > -1 && card.y > -1) {
+            var cell = $("#" + card.x + "-" + card.y);
+            if (cell) {
+                card.element.offset({
+                    top: cell.offset().top,
+                    left: cell.offset().left
+                });
+            }
         }
-    });
+    }
 }
 
 function CreateZoomCard(target) {
@@ -183,43 +171,53 @@ function CreateZoomCard(target) {
     left = Math.min($(window).width() - ZoomedCardWidth, left);
 
     $("<img />").attr("id", "zoom-card")
-                .attr("src", target.children("img").attr("src"))
-                .offset({top: top, left: left})
-                .appendTo("body");
+        .attr("src", target.children("img").attr("src"))
+        .offset({ top: top, left: left })
+        .appendTo("body");
 }
 
 function RemoveZoomCard() {
     $("#zoom-card").remove();
 }
 
-function FlipCard(target) {
-    target.toggleClass("flipped");
+function FlipCard(index) {
+    var target = game.state.cards[index].element;
+    if (!target) {
+        return;
+    }
 
-    var targetImage = target.children("img");
-    var otherSide = targetImage.attr("otherSide");
-    targetImage.attr("otherSide", targetImage.attr("src"));
-    targetImage.attr("src", otherSide);
+    if (game.state.players[player].HasCard(index)) {
+        var targetOverlay = target.children(".overlay");
+        targetOverlay.toggleClass("overlay-shown");
+    } else {
+        var targetImage = target.children("img");
+        var otherSide = targetImage.attr("otherSide");
+        targetImage.attr("otherSide", targetImage.attr("src"));
+        targetImage.attr("src", otherSide);
+    }
 }
 
-$(function() {
+$(function () {
     socket = io();
 
-    socket.on("setup", function(data) {
-        CreateGrid(CellWidth, CellHeight, data.grid);
-        CreateCards(data.deck);
+    socket.on("setup", function (state) {
+        game = new Game(state);
+        CreateGrid();
+        CreateCards();
         PositionCards();
     });
 
-    socket.on("card moved", function(data) {
-        var target = deck[data.index].element;
+    socket.on("card moved", function (data) {
+        var target = game.state.cards[data.index].element;
         if (target) {
-            MoveCard(target, data.to.x, data.to.y);
-            UpdateGridState(data);
+            game.MoveCard(1 - player, data.index, data.to);
+            MoveCard(target, data.to);
         }
     });
 
-    socket.on("card flipped", function(data) {
-        FlipCard($(".card").eq(data));
+    socket.on("card flipped", function (index) {
+        game.FlipCard(1 - player, index);
+        FlipCard(index);
     });
 
     $(window).resize(PositionCards);
