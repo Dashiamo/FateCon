@@ -184,7 +184,7 @@ function CreateHand() {
             PositionCardsInHand(player);
             socket.emit("add to hand", index);
         }
-    });
+    }).addClass("player-hand");
 }
 
 function ResizeCards() {

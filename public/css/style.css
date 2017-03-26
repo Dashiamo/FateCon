@@ -19,8 +19,12 @@ body {
     flex: 1 1 auto;
 }
 
+.player-hand {
+    background-color: rgba(0, 0, 0, 0.2);
+}
+
 .ui-droppable-hover {
-    background-color: rgba(255, 255, 0, 0.5);
+    background-color: rgba(255, 255, 0, 0.3);
 }
 
 .grid {
@@ -46,7 +50,7 @@ body {
 }
 
 .grid .ui-droppable-hover {
-    background-color: rgba(255, 255, 0, 0.5);
+    background-color: rgba(255, 255, 0, 0.3);
 }
 
 .card {
