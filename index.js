@@ -58,6 +58,13 @@ io.on("connection", function (socket) {
             socket.broadcast.emit("card flipped", index);
         }
     });
+
+    socket.on("add to hand", function (index) {
+        if (game.state.cards[index].owner === socket.player) {
+            game.AddCardToOwnersHand(index);
+            socket.broadcast.emit("add to hand", index);
+        }
+    });
 });
 
 http.listen(8080, function () {

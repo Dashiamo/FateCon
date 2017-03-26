@@ -4,49 +4,43 @@ var dragging = false;
 var game = null;
 var player = -1;
 
-var DefaultCardWidth = 71;
-var DefaultCardHeight = 99;
-var CellWidth = DefaultCardWidth + 1;
-var CellHeight = DefaultCardHeight + 1;
+var CellWidth = 0;
+var CellHeight = 0;
+var DefaultCardWidth = 0;
+var DefaultCardHeight = 0;
 
 // Constants
+const HandAreaMargin = 20;
 const ZoomedCardWidth = 375;
 const ZoomedCardHeight = 523;
-const ZoomedCardOffsetX = DefaultCardWidth / 2 - ZoomedCardWidth / 2;
-const ZoomedCardOffsetY = DefaultCardHeight / 2 - ZoomedCardHeight / 2;
 
 function SetupDimensions() {
     var windowHeight = $(window).height();
     var ratio = ZoomedCardWidth / ZoomedCardHeight;
-    DefaultCardHeight = (windowHeight - 40) / (2 + game.state.gridHeight);
+    DefaultCardHeight = (windowHeight - (2 * HandAreaMargin)) / (2 + game.state.gridHeight);
     DefaultCardWidth = DefaultCardHeight * ratio;
     CellHeight = Math.ceil(DefaultCardHeight) + 1;
     CellWidth = Math.ceil(DefaultCardWidth) + 1;
+    $(".hand").css("height", DefaultCardHeight + HandAreaMargin / 2);
 }
 
-function MoveCard(target, to) {
-    var cell = $($(".cell").get(to.x + to.y * game.state.gridWidth));
-    target.animate({ top: cell.offset().top, left: cell.offset().left }, 100, "linear");
+function MoveCardToGridCell(index, cell, card, animationDelay = 100) {
+    card.animate({ top: cell.offset().top, left: cell.offset().left }, animationDelay, "linear");
+    PositionCardsInHand(game.state.cards[index].owner);
 }
 
 function DropCard(event, ui) {
     var target = $(event.target);
-
-    ui.draggable.offset({
-        top: target.offset().top,
-        left: target.offset().left
-    });
-
-    var index = ui.draggable.data("index");
     var data = {
         to: {
             x: target.data("x"),
             y: target.data("y")
         },
-        index: index
+        index: ui.draggable.data("index")
     };
 
     game.MoveCard(data.index, data.to);
+    MoveCardToGridCell(data.index, target, ui.draggable, 0);
     socket.emit("card moved", data);
 }
 
@@ -72,7 +66,6 @@ function CreateGrid() {
             });
 
             cell.droppable({
-                classes: { "ui-droppable-hover": "hovered-cell" },
                 drop: DropCard
             });
 
@@ -99,7 +92,7 @@ function CreateCards() {
 
 function CreateCard(name, index, owner) {
     var card = $("<div />").addClass("card")
-        .offset({ left: 10, top: 10 + owner * (10 + DefaultCardHeight) })
+        .offset({ left: 10, top: 200 + owner * (10 + DefaultCardHeight) })
         .css("z-index", index)
         .data("index", index)
         .appendTo("body");
@@ -136,13 +129,15 @@ function CreateCard(name, index, owner) {
         cursor: "move",
         cursorAt: { top: DefaultCardHeight / 2, left: DefaultCardWidth / 2 },
         delay: 100,
+        revert: "invalid",
+        revertDuration: 100,
         scroll: false,
         stack: ".card",
-        start: function (event) {
+        start: function () {
             dragging = true;
             RemoveZoomCard();
         },
-        stop: function (event) {
+        stop: function () {
             dragging = false;
         }
     })
@@ -162,8 +157,38 @@ function CreateCard(name, index, owner) {
     return card;
 }
 
+function PositionCardsInHand(player, animationDelay = 100) {
+    var hand = game.state.players[player].hand;
+    var handArea = $($(".hand").get(player));
+
+    // xOffset is the position the leftmost card should sit to make all cards centered.
+    var xOffset = (handArea.width() / 2) - (((hand.length * DefaultCardWidth) + ((hand.length - 1) * HandAreaMargin / 2)) / 2);
+    var top = handArea.offset().top + (handArea.height() - DefaultCardHeight) / 2;
+
+    for (var i = 0; i < hand.length; i++) {
+        game.state.cards[hand[i]].element.animate({
+            top: top,
+            left: xOffset + i * (DefaultCardWidth + HandAreaMargin / 2)
+        }, animationDelay, "linear");
+    }
+}
+
+function CreateHand() {
+    $($(".hand").get(player)).droppable({
+        accept: function (draggable) {
+            return game.state.cards[draggable.data("index")].owner === player;
+        },
+        drop: function (event, ui) {
+            var index = ui.draggable.data("index");
+            game.AddCardToOwnersHand(index);
+            PositionCardsInHand(player);
+            socket.emit("add to hand", index);
+        }
+    });
+}
+
 function ResizeCards() {
-    $(".card").draggable({ cursorAt: { top: DefaultCardHeight / 2, left: DefaultCardWidth / 2 } });
+    $(".card").draggable("option", "cursorAt", { top: DefaultCardHeight / 2, left: DefaultCardWidth / 2 });
     $(".card img").css("height", DefaultCardHeight);
 }
 
@@ -186,10 +211,13 @@ function PositionCards() {
 }
 
 function CreateZoomCard(target) {
-    var top = Math.max(0, target.offset().top + ZoomedCardOffsetY);
+    var zoomedCardOffsetX = DefaultCardWidth / 2 - ZoomedCardWidth / 2;
+    var zoomedCardOffsetY = DefaultCardHeight / 2 - ZoomedCardHeight / 2;
+
+    var top = Math.max(0, target.offset().top + zoomedCardOffsetY);
     top = Math.min($(window).height() - ZoomedCardHeight, top);
 
-    var left = Math.max(0, target.offset().left + ZoomedCardOffsetX);
+    var left = Math.max(0, target.offset().left + zoomedCardOffsetX);
     left = Math.min($(window).width() - ZoomedCardWidth, left);
 
     $("<img />").attr("id", "zoom-card")
@@ -228,14 +256,18 @@ $(function () {
         SetupDimensions();
         CreateGrid();
         CreateCards();
+        CreateHand();
+        PositionCardsInHand(0, 0);
+        PositionCardsInHand(1, 0);
         PositionCards();
     });
 
     socket.on("card moved", function (data) {
         var target = game.state.cards[data.index].element;
         if (target) {
+            var cell = $($(".cell").get(data.to.x + data.to.y * game.state.gridWidth));
             game.MoveCard(data.index, data.to);
-            MoveCard(target, data.to);
+            MoveCardToGridCell(data.index, cell, target);
         }
     });
 
@@ -244,11 +276,18 @@ $(function () {
         FlipCard(index);
     });
 
+    socket.on("add to hand", function (index) {
+        game.AddCardToOwnersHand(index);
+        PositionCardsInHand(game.state.cards[index].owner);
+    });
+
     $(window).resize(function () {
         SetupDimensions();
         $(".grid").remove();
         CreateGrid();
         ResizeCards();
+        PositionCardsInHand(0, 0);
+        PositionCardsInHand(1, 0);
         PositionCards();
     });
 });

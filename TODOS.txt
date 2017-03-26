@@ -1,9 +1,8 @@
 Initial playable state:
-    - Hand system.
+    - Prevent dragging on cards in your opponent's hand.
+    - Some way to play cards to the board without your opponent knowing which cards you picked.
     - Counters.
     - Simple way to pick deck you want to play and load all those cards.
-
-    - Probably more stuff goes here. 
 
 Improvements:
     - Fix transparent corners on cards.

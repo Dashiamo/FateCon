@@ -3,9 +3,24 @@ html, body {
 }
 
 body {
+    margin: 0px;
     overflow: hidden;
     background-repeat: repeat;
     background-image: url("background.png");
+}
+
+.container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.flex-box {
+    flex: 1 1 auto;
+}
+
+.ui-droppable-hover {
+    background-color: rgba(255, 255, 0, 0.5);
 }
 
 .grid {
@@ -30,7 +45,7 @@ body {
     background-color: rgba(255, 0, 0, 0.2);
 }
 
-.grid .hovered-cell {
+.grid .ui-droppable-hover {
     background-color: rgba(255, 255, 0, 0.5);
 }
 
