@@ -25,6 +25,7 @@ function SetupDimensions() {
 }
 
 function MoveCardToGridCell(index, cell, card, animationDelay = 100) {
+    card.removeClass("in-other-hand");
     card.animate({ top: cell.offset().top, left: cell.offset().left }, animationDelay, "linear");
     PositionCardsInHand(game.state.cards[index].owner);
 }
@@ -88,6 +89,15 @@ function CreateCards() {
             FlipCard(i);
         }
     }
+
+    var otherHand = [];
+    if (player > -1) {
+        otherHand = game.state.players[1 - player].hand;
+    }
+
+    for (var i = 0; i < otherHand.length; i++) {
+        game.state.cards[otherHand[i]].element.addClass("in-other-hand");
+    }
 }
 
 function CreateCard(name, index, owner) {
@@ -125,6 +135,7 @@ function CreateCard(name, index, owner) {
     }
 
     card.draggable({
+        cancel: ".in-other-hand",
         containment: "parent",
         cursor: "move",
         cursorAt: { top: DefaultCardHeight / 2, left: DefaultCardWidth / 2 },
@@ -277,8 +288,11 @@ $(function () {
     });
 
     socket.on("add to hand", function (index) {
+        var card = game.state.cards[index];
+        card.element.addClass("in-other-hand");
         game.AddCardToOwnersHand(index);
-        PositionCardsInHand(game.state.cards[index].owner);
+        PositionCardsInHand(card.owner);
+
     });
 
     $(window).resize(function () {
