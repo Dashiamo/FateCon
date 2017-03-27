@@ -8,8 +8,8 @@ var io = require("socket.io")(http);
 
 var data = require("./data");
 var game = new Game(data.GenerateInitialState());
-game.AddDeck(0, data.GenerateDeck("medusa"));
-game.AddDeck(1, data.GenerateDeck("medusa"));
+game.AddDeck(0, data.GenerateDeck("Arturia Pendragon Alter"));
+game.AddDeck(1, data.GenerateDeck("Sasaki Kojirou"));
 
 app.use(express.static("public"));
 app.get("/", function (req, res) {
