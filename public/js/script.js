@@ -3,6 +3,7 @@ var socket = null;
 var dragging = false;
 var game = null;
 var player = -1;
+var highestZIndex = 0;
 
 var CellWidth = 0;
 var CellHeight = 0;
@@ -14,6 +15,10 @@ const HandAreaMargin = 20;
 const ZoomedCardWidth = 375;
 const ZoomedCardHeight = 523;
 
+function ClearExistingUI() {
+    $("body").children().not(".container").remove();
+}
+
 function SetupDimensions() {
     var windowHeight = $(window).height();
     var ratio = ZoomedCardWidth / ZoomedCardHeight;
@@ -24,8 +29,20 @@ function SetupDimensions() {
     $(".hand").css("height", DefaultCardHeight + HandAreaMargin / 2);
 }
 
+function UpdateLife() {
+    for (var i = 0; i < game.state.players.length; i++) {
+        var hp = game.state.players[i].hp;
+        if (hp <= 7) {
+            $($(".life-bar").get(i)).addClass("life-bar-noble").html(hp);
+        } else {
+            $($(".life-bar").get(i)).removeClass("life-bar-noble").html(hp);
+        }
+    }
+}
+
 function MoveCardToGridCell(index, cell, card, animationDelay = 100) {
     card.removeClass("in-other-hand");
+    card.css("z-index", highestZIndex++);
     card.animate({ top: cell.offset().top, left: cell.offset().left }, animationDelay, "linear");
     PositionCardsInHand(game.state.cards[index].owner);
 }
@@ -82,6 +99,8 @@ function CreateGrid() {
 }
 
 function CreateCards() {
+    highestZIndex = game.state.cards.length;
+
     for (var i = 0; i < game.state.cards.length; i++) {
         var card = game.state.cards[i];
         game.state.cards[i].element = CreateCard(card.name, i, card.owner);
@@ -101,6 +120,8 @@ function CreateCards() {
 }
 
 function CreateCard(name, index, owner) {
+    var deck = game.state.players[owner].Deck;
+
     var card = $("<div />").addClass("card")
         .offset({ left: 10, top: 200 + owner * (10 + DefaultCardHeight) })
         .css("z-index", index)
@@ -143,8 +164,9 @@ function CreateCard(name, index, owner) {
         revert: "invalid",
         revertDuration: 100,
         scroll: false,
-        stack: ".card",
-        start: function () {
+        //stack: ".card",
+        start: function (event, ui) {
+            ui.helper.css("z-index", highestZIndex++);
             dragging = true;
             RemoveZoomCard();
         },
@@ -261,10 +283,15 @@ function FlipCard(index) {
 $(function () {
     socket = io();
 
-    socket.on("setup", function (data) {
-        player = data[0];
-        game = new Game(data[1]);
+    socket.on("join", function (assignedPlayer) {
+        player = assignedPlayer;
+    });
+
+    socket.on("setup", function (state) {
+        game = new Game(state);
+        ClearExistingUI();
         SetupDimensions();
+        UpdateLife();
         CreateGrid();
         CreateCards();
         CreateHand();
@@ -292,7 +319,11 @@ $(function () {
         card.element.addClass("in-other-hand");
         game.AddCardToOwnersHand(index);
         PositionCardsInHand(card.owner);
+    });
 
+    socket.on("change life", function (index, delta) {
+        game.ChangeLife(index, delta);
+        UpdateLife();
     });
 
     $(window).resize(function () {
@@ -304,4 +335,30 @@ $(function () {
         PositionCardsInHand(1, 0);
         PositionCards();
     });
+
+    function HandleLifeClick(player, delta) {
+        game.ChangeLife(player, delta);
+        UpdateLife();
+        socket.emit("change life", player, delta);
+    }
+
+    $($(".life-bar").get(0))
+        .click(function (event) {
+            HandleLifeClick(0, 1);
+            return false;
+        })
+        .bind("contextmenu", function () {
+            HandleLifeClick(0, -1);
+            return false;
+        });
+
+    $($(".life-bar").get(1))
+        .click(function (event) {
+            HandleLifeClick(1, 1);
+            return false;
+        })
+        .bind("contextmenu", function () {
+            HandleLifeClick(1, -1);
+            return false;
+        });
 });

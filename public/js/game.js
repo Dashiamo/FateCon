@@ -14,9 +14,9 @@ var Game = function (state) {
 Game.prototype.AddCardToOwnersHand = function (index) {
     var player = this.state.cards[index].owner;
 
+    // Trying to add a card you already have to your hand
+    // should move it to the end to make reordering hand possible.
     if (this.state.players[player].HasCard(index)) {
-        // Trying to add a card you already have to your hand
-        // should move it to the end to make reordering hand possible.
         this.state.players[player].RemoveCard(index);
     }
 
@@ -45,6 +45,10 @@ Game.prototype.MoveCard = function (index, to) {
 
 Game.prototype.FlipCard = function (index) {
     this.state.cards[index].flipped = !this.state.cards[index].flipped;
+}
+
+Game.prototype.ChangeLife = function (index, delta) {
+    this.state.players[index].hp += delta;
 }
 
 if (typeof module !== "undefined" && module.exports) {

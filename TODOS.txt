@@ -1,8 +1,12 @@
-Initial playable state:
-    - Some way to play cards to the board without your opponent knowing which cards you picked.
-    - Counters.
-    - Simple way to pick deck you want to play and load all those cards.
+1. Initial playable state:
+    - Tokens.
+    - Markers.
+    - Better admin panel.
 
-Improvements:
+2. 1v2 and 2v2 support
+    - Display 4 of each player specific UI element.
+
+3. Improvements:
     - Fix transparent corners on cards.
+    - Some way to play cards to the board without your opponent knowing which cards you picked.
     - Basic game logic?

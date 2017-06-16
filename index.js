@@ -1,19 +1,51 @@
+// Classes.
 var Game = require("./public/js/game");
+var Data = require("./data");
 
+// Game state.
+var game = null;
+
+// Server.
+var fs = require("fs");
 var express = require("express");
 var app = express();
-
 var http = require("http").Server(app);
 var io = require("socket.io")(http);
-
-var data = require("./data");
-var game = new Game(data.GenerateInitialState());
-game.AddDeck(0, data.GenerateDeck("Arturia Pendragon Alter"));
-game.AddDeck(1, data.GenerateDeck("Sasaki Kojirou"));
+var bodyParser = require('body-parser');
 
 app.use(express.static("public"));
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
 app.get("/", function (req, res) {
     res.sendFile(__dirname + "/index.html");
+});
+app.get("/admin", function (req, res) {
+    res.sendFile(__dirname + "/admin.html");
+});
+app.post("/admin", function (req, rest) {
+    console.log("admin refreshed game");
+
+    var decks = [req.body.deck1, req.body.deck2];
+    for (var i = 0; i < decks.length; i++) {
+        var path = "./public/images/" + decks[i];
+        if (!decks[i] || !fs.existsSync(path)) {
+            return;
+        }
+    }
+
+    game = new Game(Data.GenerateInitialState());
+    for (var i = 0; i < decks.length; i++) {
+        var path = "./public/images/" + decks[i];
+        var fileNames = fs.readdirSync(path);
+        var cardNames = fileNames.map(function (fileName) {
+            return fileName.replace(".jpg", "");
+        });
+
+        game.AddDeck(i, Data.GenerateDeck(decks[i], cardNames));
+    }
+
+    io.emit("setup", game.state);
 });
 
 var playerSpotsTaken = [false, false];
@@ -35,7 +67,11 @@ io.on("connection", function (socket) {
         console.log("defaulted to spectator");
     }
 
-    socket.emit("setup", [socket.player, game.state]);
+    socket.emit("join", socket.player);
+
+    if (game) {
+        socket.emit("setup", game.state);
+    }
 
     socket.on("disconnect", function () {
         console.log("a user disconnected");
@@ -64,6 +100,11 @@ io.on("connection", function (socket) {
             game.AddCardToOwnersHand(index);
             socket.broadcast.emit("add to hand", index);
         }
+    });
+
+    socket.on("change life", function (index, delta) {
+        game.ChangeLife(index, delta);
+        socket.broadcast.emit("change life", index, delta)
     });
 });
 

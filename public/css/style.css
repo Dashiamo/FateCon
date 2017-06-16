@@ -89,3 +89,19 @@ body {
     position: absolute;
     pointer-events: none;
 }
+
+.life-bar {
+    right: 10px;
+    width: 50px;
+    height: 30px;
+    color: white;
+    line-height: 30px;
+    position: absolute;
+    text-align: center;
+    vertical-align: middle;
+    background-color: rgba(0, 0, 0, 0.6);
+}
+
+.life-bar-noble {
+    color: yellow;
+}
