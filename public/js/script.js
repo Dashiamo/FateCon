@@ -130,7 +130,7 @@ function CreateCard(name, index, owner) {
 
     $("<img />").css("height", DefaultCardHeight)
         .attr("src", "/images/" + name + ".jpg")
-        .attr("otherSide", "/images/Card Back.jpg")
+        .attr("otherSide", "/images/_CardBack.jpg")
         .appendTo(card);
 
     $("<div />").addClass("overlay")
