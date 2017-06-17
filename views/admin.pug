@@ -1,0 +1,17 @@
+html
+  body
+    form(method='POST' action='/admin')
+      select(name="deck1" id="deck1")
+        each deck in decks
+          option(value=deck) #{deck}
+
+      select(name="deck2" id="deck2")
+        each deck in decks
+          option(value=deck type='password' name='password') #{deck}
+
+      button(type='submit') Submit
+
+    p Current Characters:
+    ul
+      each character in characters
+        li=character

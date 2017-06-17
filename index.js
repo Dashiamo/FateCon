@@ -2,9 +2,6 @@
 var Game = require("./public/js/game");
 var Data = require("./data");
 
-// Game state.
-var game = null;
-
 // Server.
 var fs = require("fs");
 var express = require("express");
@@ -13,39 +10,49 @@ var http = require("http").Server(app);
 var io = require("socket.io")(http);
 var bodyParser = require('body-parser');
 
+// Game state.
+var game = null;
+var currentCharacters = [];
+var decks = fs.readdirSync("./public/images/").filter(function (value) {
+    return !value.startsWith("_");
+});
+
 app.use(express.static("public"));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.set("view engine", "pug");
 
 app.get("/", function (req, res) {
     res.sendFile(__dirname + "/index.html");
 });
 app.get("/admin", function (req, res) {
-    res.sendFile(__dirname + "/admin.html");
+    res.render("admin", { decks: decks, characters: currentCharacters });
 });
-app.post("/admin", function (req, rest) {
-    console.log("admin refreshed game");
-
-    var decks = [req.body.deck1, req.body.deck2];
-    for (var i = 0; i < decks.length; i++) {
-        var path = "./public/images/" + decks[i];
-        if (!decks[i] || !fs.existsSync(path)) {
+app.post("/admin", function (req, res) {
+    var decksToSet = [req.body.deck1, req.body.deck2];
+    for (var i = 0; i < decksToSet.length; i++) {
+        if (decks.indexOf(decksToSet[i]) == -1) {
+            res.redirect("back");
             return;
         }
     }
 
+    currentCharacters = decksToSet;
     game = new Game(Data.GenerateInitialState());
-    for (var i = 0; i < decks.length; i++) {
-        var path = "./public/images/" + decks[i];
+    for (var i = 0; i < currentCharacters.length; i++) {
+        var path = "./public/images/" + currentCharacters[i];
         var fileNames = fs.readdirSync(path);
         var cardNames = fileNames.map(function (fileName) {
             return fileName.replace(".jpg", "");
         });
 
-        game.AddDeck(i, Data.GenerateDeck(decks[i], cardNames));
+        game.AddDeck(i, Data.GenerateDeck(currentCharacters[i], cardNames));
     }
 
     io.emit("setup", game.state);
+    console.log("admin refreshed game with decks [" + req.body.deck1 + ", " + req.body.deck2 + "]");
+
+    res.redirect("back");
 });
 
 var playerSpotsTaken = [false, false];
